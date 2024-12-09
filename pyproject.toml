@@ -1,0 +1,10 @@
+[project]
+dependencies = [
+    "cloud-files>=4.27.0",
+    "paleo>=0.3.1",
+    "task-queue>=2.14.0",
+]
+name = "paleo-cloud"
+readme = "README.md"
+requires-python = ">=3.12"
+version = "0.1.0"
