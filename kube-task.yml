@@ -50,7 +50,7 @@ spec:
             requests:
               # memory: 0.18Gi
               # cpu: "90m"
-              memory: 0.3Gi
+              memory: 0.5Gi
               cpu: "100m"
             limits:
               memory: 2.0Gi
