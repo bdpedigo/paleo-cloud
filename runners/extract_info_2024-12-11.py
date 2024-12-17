@@ -11,14 +11,17 @@ from caveclient import CAVEclient
 from cloudfiles import CloudFiles
 from paleo import (
     apply_edit_sequence,
+    check_graph_changes,
     get_initial_graph,
+    get_level2_data,
+    get_level2_spatial_graphs,
+    get_metaedit_counts,
     get_metaedits,
     get_mutable_synapses,
     get_node_aliases,
     get_nucleus_supervoxel,
     get_root_level2_edits,
     map_synapses_to_sequence,
-    skeletonize_sequence,
 )
 from paleo.io import edits_to_json, graph_to_json, json_to_edits, json_to_graph
 from taskqueue import TaskQueue, queueable
@@ -104,7 +107,14 @@ def extract_edits(root_id):
         for operation_id, delta in network_edits.items():
             assert delta == back_edits[operation_id]
 
-    edits = json_to_edits(cf.get_json(f"edits/{root_id}_edits.json"))
+    try:
+        edits = json_to_edits(cf.get_json(f"edits/{root_id}_edits.json"))
+    except Exception as e:
+        print("Bailing out")
+        print(cf.get_json(f"edits/{root_id}_edits.json"))
+        print()
+        print()
+        raise e
     return edits
 
 
@@ -160,11 +170,13 @@ def extract_synapses(root_id):
 
 @queueable
 def run_for_root(root_id):
+    print("Running for", root_id)
     edits = extract_edits(root_id)
     initial_graph = extract_graph(root_id)
     pre_synapses, post_synapses = extract_synapses(root_id)
 
-    metaedits, _ = get_metaedits(edits)
+    metaedits, edit_map = get_metaedits(edits)
+    metaedit_counts = get_metaedit_counts(edit_map)
     nuc_supervoxel_id = get_nucleus_supervoxel(root_id, client)
     anchor_nodes = get_node_aliases(nuc_supervoxel_id, client, stop_layer=2)
 
@@ -182,19 +194,28 @@ def run_for_root(root_id):
                 anchor_nodes,
                 return_graphs=True,
                 include_initial=True,
+                remove_unchanged=True,
             )
+            level2_data = get_level2_data(graphs_by_state, client)
+            spatial_graphs_by_state = get_level2_spatial_graphs(
+                graphs_by_state, level2_data=level2_data, client=client
+            )
+            is_new_level2_state = check_graph_changes(spatial_graphs_by_state)
 
-            skeletons_by_state, _ = skeletonize_sequence(
-                graphs_by_state, root_id=root_id, client=client, remove_unchanged=True
-            )
+            # skeletons_by_state, _ = skeletonize_sequence(
+            #     graphs_by_state,
+            #     root_id=root_id,
+            #     client=client,
+            #     level2_data=level2_data,
+            # )
+
+            used_states = [k for k, v in is_new_level2_state.items() if v]
 
             for side, synapses in zip(["pre", "post"], [pre_synapses, post_synapses]):
                 synapses_by_state = map_synapses_to_sequence(
                     synapses, graphs_by_state, side=side
                 )
-                synapses_by_state = subset_dict(
-                    synapses_by_state, list(skeletons_by_state.keys())
-                )
+                synapses_by_state = subset_dict(synapses_by_state, used_states)
                 synapse_ids_by_state = {
                     k: list(v.keys()) for k, v in synapses_by_state.items()
                 }
@@ -204,16 +225,20 @@ def run_for_root(root_id):
                     synapse_ids_by_state,
                 )
 
+            state_info = pd.DataFrame(index=used_states)
+            if sequence_name == "idealized":
+                state_info["n_edits"] = (
+                    state_info.index.map(metaedit_counts).fillna(0).astype(int)
+                )
+            elif sequence_name == "historical":
+                state_info["n_edits"] = np.ones(len(state_info), dtype=int)
+            state_info["cumulative_n_edits"] = state_info["n_edits"].cumsum()
 
-# %%
-# side = "pre"
-# sequence_name = "idealized"
-# root_id = "864691135645874159"
-# cf = CloudFiles(BUCKET)
-# back = cf.get_json(
-#     f"{side}_synapse_sequences/{root_id}_{sequence_name}_sequence.json",
-# )
-# back = {int(k): v for k, v in back.items()}
+            write_df_to_cloud(
+                state_info,
+                f"state_info/{root_id}_{sequence_name}_state_info.csv.gz",
+            )
+    print("Done for", root_id)
 
 
 # %%
