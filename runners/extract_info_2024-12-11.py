@@ -99,9 +99,9 @@ def extract_edits(root_id):
     if not cf.exists(f"edits/{root_id}_edits.json") or RECOMPUTE:
         network_edits = get_root_level2_edits(root_id, client, n_jobs=N_JOBS)
         out_json = edits_to_json(network_edits)
-        cf.put_json(f"{root_id}_edits.json", out_json)
+        cf.put_json(f"edits/{root_id}_edits.json", out_json)
 
-        back_json = cf.get_json(f"{root_id}_edits.json")
+        back_json = cf.get_json(f"edits/{root_id}_edits.json")
         back_edits = json_to_edits(back_json)
 
         for operation_id, delta in network_edits.items():
@@ -254,6 +254,8 @@ if True:
     tq.poll(lease_seconds=lease_seconds, verbose=False, tally=False)
 
 # %%
+
+
 REQUEST = False
 if REQUEST:
     proofreading_table = client.materialize.query_table(
@@ -273,3 +275,18 @@ if REQUEST:
     # tasks = [partial(extract_graph, root_id) for root_id in root_ids]
     tasks = [partial(run_for_root, root_id) for root_id in root_ids]
     tq.insert(tasks)
+
+# %%
+
+proofreading_table = client.materialize.query_table("proofreading_status_and_strategy")
+proofreading_table.query(
+    "strategy_axon.isin(['axon_fully_extended', 'axon_partially_extended'])",
+    inplace=True,
+)
+root_ids = proofreading_table["pt_root_id"].unique()
+
+# %%
+root_id = 864691135105609293
+run_for_root(root_id)
+# %%
+out = cf.get_json(f"edits/{root_id}_edits.json")

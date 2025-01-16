@@ -5,7 +5,7 @@ metadata:
     run: paleo-cloud
   name: paleo-cloud
 spec:
-  replicas: 16 # number of pods to run
+  replicas: 12 # number of pods to run
   selector:
     matchLabels:
       run: paleo-cloud
@@ -20,11 +20,11 @@ spec:
         run: paleo-cloud # metadata label attached to pod
     spec:
       containers:
-        - image: bdpedigo/paleo-cloud:v7 # image to pull from dockerhub
+        - image: bdpedigo/paleo-cloud:v9 # image to pull from dockerhub
           name: paleo-cloud # name of container in pod
           imagePullPolicy: Always
           command: ["/bin/sh"]
-          args: ["-c", "while true; do uv run runners/extract_info_2024-11-13.py; done"]
+          args: ["-c", "while true; do uv run runners/extract_info_2024-12-11.py; done"]
           env:
             - name: CLOUDSDK_CORE_PROJECT
               value: ${CLOUDSDK_CORE_PROJECT}
@@ -51,9 +51,9 @@ spec:
               # memory: 0.18Gi
               # cpu: "90m"
               memory: 0.5Gi
-              cpu: "100m"
+              cpu: "200m"
             limits:
-              memory: 2.0Gi
+              memory: 8.0Gi
           volumeMounts:
             - name: secrets-volume
               mountPath: /root/.cloudvolume/secrets

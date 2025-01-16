@@ -19,10 +19,10 @@ gcloud container --project "exalted-beanbag-334502" clusters create "paleo-cloud
     --zone "us-west1-b" \
     --no-enable-basic-auth \
     --release-channel "stable" \
-    --machine-type "c2d-highcpu-8" \
+    --machine-type "c2d-standard-8" \
     --image-type "COS_CONTAINERD" \
     --disk-type "pd-standard" \
-    --disk-size "50" \
+    --disk-size "100" \
     --metadata disable-legacy-endpoints=true \
     --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" \
     --preemptible \
@@ -31,8 +31,9 @@ gcloud container --project "exalted-beanbag-334502" clusters create "paleo-cloud
     --monitoring=SYSTEM \
     --enable-ip-alias \
     --network "projects/exalted-beanbag-334502/global/networks/patchseq" \
-    --subnetwork "projects/exalted-beanbag-334502/regions/us-west1/subnetworks/patchseq" \
-    --no-enable-intra-node-visibility \
+    --subnetwork "projects/exalted-beanbag-334502/regions/us-west1/subnetworks/patchseq"
+
+--no-enable-intra-node-visibility \
     --no-enable-master-authorized-networks \
     --addons HorizontalPodAutoscaling,HttpLoadBalancing,GcePersistentDiskCsiDriver \
     --enable-autoupgrade \
@@ -50,4 +51,4 @@ kubectl create secret generic secrets \
     --from-file=$HOME/.cloudvolume/secrets/global.daf-apis.com-cave-secret.json \
     --from-file=$HOME/.cloudvolume/secrets/aws-secret.json \
     --from-file=$HOME/.cloudvolume/secrets/google-secret.json \
-    --from-file=$HOME/.cloudvolume/secrets/discord-secret.json \
+    --from-file=$HOME/.cloudvolume/secrets/discord-secret.json

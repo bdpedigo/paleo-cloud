@@ -4,7 +4,7 @@ To build (from folder above):
 `docker buildx build --platform linux/amd64 -t paleo-cloud .`
 
 To run:
-`docker run --rm --platform linux/amd64 -v /Users/ben.pedigo/.cloudvolume/secrets:/root/.cloudvolume/secrets paleo-cloud uv run ./runners/extract_edits_2024-11-13.py`
+`docker run --rm --platform linux/amd64 -v /Users/ben.pedigo/.cloudvolume/secrets:/root/.cloudvolume/secrets paleo-cloud uv run ./runners/extract_info_2024-12-11.py`
 
 To tag:
 `docker tag paleo-cloud bdpedigo/paleo-cloud:v0`
